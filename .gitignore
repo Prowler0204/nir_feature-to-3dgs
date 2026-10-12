@@ -1,0 +1,123 @@
+# ==============================================================================
+# Git Ignore Configuration: Multimodal 3DGS & LAI Point Cloud Research
+# ==============================================================================
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+env/
+.venv/
+ENV/
+
+# Logging, profiling & temporary runs
+**/wandb/
+**/logs/
+**/outputs/
+**/output/
+**/.cache/
+**/.git_backup_upstream/
+
+# ------------------------------------------------------------------------------
+# Heavy Media, Videos & Drone Captures
+# ------------------------------------------------------------------------------
+*.mp4
+*.MP4
+*.mov
+*.MOV
+*.avi
+*.AVI
+*.mkv
+*.MKV
+
+# ------------------------------------------------------------------------------
+# Archives, Installers & Large Binaries
+# ------------------------------------------------------------------------------
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+*.run
+colmap.zip
+colmap_bin/
+cuda_*.run
+
+# ------------------------------------------------------------------------------
+# Machine Learning Checkpoints, Large Weights & Cache
+# ------------------------------------------------------------------------------
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.gguf
+*.bin
+*.onnx
+*.npy
+*.npz
+
+# ------------------------------------------------------------------------------
+# 3D Point Clouds, Meshes & Databases (>100MB risk)
+# ------------------------------------------------------------------------------
+*.ply
+*.las
+*.laz
+*.pcd
+*.pts
+*.xyz
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Original Inria 3DGS large demo animations
+gaussian-splatting/assets/*.gif
+
+# ------------------------------------------------------------------------------
+# Datasets & External Large Directory Trees
+# ------------------------------------------------------------------------------
+SampleSet/
+NIR/
+gaussian-splatting/data/
+gaussian-splatting/output/
+gaussian-splatting/SIBR_viewers/
+RAI/gsgen/.cache/
+RAI/gsgen/point_e_model_cache/
+
+# LAI External Clones, Heavy Baseline Repos & Raw Data
+LAI/2d-gaussian-splatting/
+LAI/AnySplat/
+LAI/FDTLS_Tool/
+LAI/GroundingDINO/
+LAI/odysseus/
+LAI/segment-anything-2/
+LAI/gaussian-splatting/
+LAI/TLS/
+LAI/dataset_final/
+LAI/data_final/
+LAI/Final_PCD/
+LAI/metric_recon/
+
+# OS and Editor artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# ------------------------------------------------------------------------------
+# Exceptions: Keep Documentation, Showcase Figures, Reports & LaTeX Source
+# ------------------------------------------------------------------------------
+!assets/
+!assets/**
+!LAI/Report/*.png
+!LAI/Report/*.pdf
+!pipeline.pdf

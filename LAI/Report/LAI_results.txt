@@ -1,0 +1,15 @@
+bushes.ply：LAI=0.5656462273272228
+bushes_3dgs_auto_align.ply：LAI=0.6455488591269841
+bushes_3dgs_auto_align_postprocessed.ply：LAI=0.6724640982847628
+
+indoor_tree5_3dgs_auto_align.ply：LAI=0.08237037037037037
+indoor_tree5_3dgs_auto_align_postprocessed.ply：LAI=0.1262222222222222
+indoor_tree5_wp.ply：LAI=0.13333333333333333
+
+outdoor_small_plant.ply：LAI=0.40914676767676766
+outdoor_small_plant_3dgs_auto_align.ply：LAI=0.521026315013774
+outdoor_small_plant_3dgs_auto_align_postprocessed.ply：LAI=0.4659921559024589
+
+tree1_rgb_3dgs_auto_align.ply：LAI=0.20992968750000005
+tree1_rgb_3dgs_auto_align_postprocessed.ply：LAI=0.06826666666666667
+tree1_tls.ply：LAI=0.14222222222222222

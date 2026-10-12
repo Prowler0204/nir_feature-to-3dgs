@@ -1,0 +1,47 @@
+Step-by-Step Pipeline Explanation
+1. Data Ingestion & Preprocessing
+Inputs: Raw RGB images and raw NIR images.
+Processing: Both sets of images are fed into COLMAP (Structure-from-Motion) simultaneously.
+Outputs: COLMAP estimates the 3D position and orientation of every camera (Camera Poses) and generates an initial low-density map of the scene (Sparse Point Cloud).
+2. Gaussian Initialization
+Action: The Sparse Point Cloud from COLMAP is used to spawn the initial set of 3D Gaussians.
+Our Modification: Standard Gaussians only hold Position, Rotation, Scale, Opacity, and RGB color. We expanded the data structure so that every Gaussian now also holds a 32-dimensional f_nir feature vector.
+3. The Training Loop (Forward Pass)
+During training, the system randomly picks a camera pose (either RGB or NIR).
+
+If it picks an RGB camera: The gsplat rendering engine splats the 3D Gaussians onto a 2D canvas, outputting a Rendered RGB Image.
+If it picks an NIR camera: The gsplat engine splats the 3D Gaussians, but instead of colors, it blends their 32D f_nir vectors, outputting a Rendered 32D Feature Map. It also outputs an alpha_map (which tracks where the solid objects are vs. empty space).
+4. Target Generation (The Ground Truth)
+If the system picked an NIR camera, we need to know what the Gaussians should have rendered.
+We take the actual, real-world Raw NIR Image for that camera pose and pass it through our Frozen CNN Encoder.
+Output: The CNN outputs a highly structured Target 32D Feature Map.
+5. Loss Computation (Scoring the Model)
+RGB Loss: We compare the Rendered RGB against the Raw RGB using standard $L_1$ and SSIM math.
+NIR Loss: We compare the Rendered 32D Map against the Target 32D Map using Cosine Similarity. We explicitly multiply this score by the alpha_map.
+Why? So the model only gets penalized for getting the solid geometry wrong, preventing it from trying to learn NIR features for the empty sky.
+6. Backward Pass & Densification
+Backpropagation: The computed loss tells the optimizer how to adjust the XYZ, RGB, and f_nir values of every Gaussian to make them better for the next loop.
+Densification: We extract the .absgrad (absolute gradient) from the gsplat backend. This tells the system where the image is blurry. The system then clones or splits Gaussians in those blurry areas to add more detail to the scene.
+
+
+wait whats this rgb to rgb loss? how are we calulating the loss? like what is rgb loss calculating the loss against?
+5:31 PM
+This is a fundamental concept of how 3D Gaussian Splatting actually "learns" the shape of the world!
+
+The "RGB Loss" is simply comparing what the Gaussians drew against the actual real-world photo you took.
+
+Here is exactly how it works in your training loop:
+
+Pick a Camera Pose: The system picks one of your training cameras (e.g., RGB Camera #12) and says to the 3D Gaussians, "Okay, pretend you are standing exactly where Camera #12 was, and draw what you see."
+The "Rendered RGB": The gsplat engine squashes (splats) all the 3D Gaussians onto a flat 2D canvas from that specific angle. This creates the "Rendered RGB" image. Early in training, this looks like a blurry mess because the Gaussians are in the wrong spots with the wrong colors.
+The "Ground Truth": The system then looks at the actual, real-world 4K photo that you took with Camera #12.
+Calculating the Loss: The system lays the Rendered image on top of the Real photo and compares them pixel by pixel.
+$L_1$ Loss: It calculates the absolute math difference between the colors (e.g., "This pixel in the render is red, but the real photo has a green leaf here!").
+SSIM Loss: It also checks "Structural Similarity" (SSIM), meaning it checks if the edges, shapes, and lighting patterns match, not just individual pixels.
+The total difference between the Rendered image and the Real photo is the RGB Loss.
+
+Why does it do this? The system uses this loss to calculate gradients (the backpropagation step). It tells the Gaussians: "Hey, you need to move slightly to the left, and turn a bit more green, so that next time I render you from this angle, you look exactly like the real photo!"
+
+Over thousands of iterations, the RGB loss drops (like how yours reached 0.0414), which means the Gaussians have moved and colored themselves so perfectly that their drawing is almost indistinguishable from reality!
+
+5:31 PM

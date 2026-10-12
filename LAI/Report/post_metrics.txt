@@ -1,0 +1,60 @@
+Loading Reference Point Cloud: /home/intern/LAI/Final_PCD/bushes.ply
+Loading Source Point Cloud: /home/intern/LAI/Final_PCD/bushes_3dgs_aligned_postprocessed.ply
+
+--- Density Statistics ---
+TLS Points: 3652413
+3DGS Points: 790750
+
+--- Computing Distances ---
+
+--- Final Metrics ---
+Chamfer Distance (Mean L1): 0.053062 meters
+Cloud-to-Cloud RMSE:      0.073088 meters
+F-Score (@ 0.05m):        61.71 %
+  -> Precision: 58.64%
+  -> Recall:    65.12%
+Loading Reference Point Cloud: /home/intern/LAI/Final_PCD/outdoor_small_plant.ply
+Loading Source Point Cloud: /home/intern/LAI/Final_PCD/outdoor_small_plant__3dgs_aligned_postprocessed.ply
+
+--- Density Statistics ---
+TLS Points: 957925
+3DGS Points: 383432
+
+--- Computing Distances ---
+
+--- Final Metrics ---
+Chamfer Distance (Mean L1): 0.037065 meters
+Cloud-to-Cloud RMSE:      0.053014 meters
+F-Score (@ 0.05m):        77.27 %
+  -> Precision: 74.34%
+  -> Recall:    80.44%
+Loading Reference Point Cloud: /home/intern/LAI/Final_PCD/tree1_tls.ply
+Loading Source Point Cloud: /home/intern/LAI/Final_PCD/tree1_rgb_3dgs_bbox_aligned_postprocessed.ply
+
+--- Density Statistics ---
+TLS Points: 3646977
+3DGS Points: 183720
+
+--- Computing Distances ---
+
+--- Final Metrics ---
+Chamfer Distance (Mean L1): 0.020113 meters
+Cloud-to-Cloud RMSE:      0.025441 meters
+F-Score (@ 0.05m):        94.93 %
+  -> Precision: 92.57%
+  -> Recall:    97.43%
+Loading Reference Point Cloud: /home/intern/LAI/Final_PCD/indoor_tree5_wp.ply
+Loading Source Point Cloud: /home/intern/LAI/Final_PCD/indoor_tree5_rgb_3dgs_bbox_aligned_postprocessed.ply
+
+--- Density Statistics ---
+TLS Points: 1112422
+3DGS Points: 270637
+
+--- Computing Distances ---
+
+--- Final Metrics ---
+Chamfer Distance (Mean L1): 0.006947 meters
+Cloud-to-Cloud RMSE:      0.009422 meters
+F-Score (@ 0.05m):        99.94 %
+  -> Precision: 99.87%
+  -> Recall:    100.00%

@@ -1,0 +1,21 @@
+--- a/gsplat/cuda/_backend.py
++++ b/gsplat/cuda/_backend.py
+@@ -7,6 +7,7 @@
+ import glob
+ import json
+ import os
+ import shutil
++import sys
+ import time
+ from subprocess import DEVNULL, call
+ 
+@@ -175,7 +176,12 @@
+         extra_include_paths = [os.path.join(PATH, "include/"), glm_path]
+         opt_level = "-O0" if FAST_COMPILE else "-O3"
+-        extra_cflags = [opt_level, "-Wno-attributes"]
++        # -Wno-attributes suppresses a GCC-specific __attribute__ warning.
++        # cl.exe (MSVC) does not recognise this flag and fails with D8021.
++        # On Linux/GCC, include it; on Windows/MSVC, omit it safely.
++        _msvc = sys.platform == "win32"
++        extra_cflags = [opt_level] if _msvc else [opt_level, "-Wno-attributes"]
+         extra_cuda_cflags = [opt_level]

@@ -1,0 +1,72 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{hyperref}
+
+\title{Multimodal 3D Gaussian Splatting:\\Integrating Near-Infrared Features using Vision Transformers}
+\author{}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report details the implementation of a Multimodal 3D Gaussian Splatting (3DGS) pipeline designed to fuse high-resolution RGB data with Near-Infrared (NIR) data. To avoid the geometric distortions introduced by traditional 2D image registration, we embed the NIR data directly into the 3D space. We employ a pre-trained Vision Transformer (DINOv2) as a feature encoder to extract rich, semantic structural targets from the NIR images. We detail the modified 3DGS architecture, the PCA dimensionality reduction, the distillation loss functions, and discuss current limitations stemming from data collection methodologies.
+\end{abstract}
+
+\section{Introduction}
+Combining multiple modalities, such as visible spectrum (RGB) and Near-Infrared (NIR), provides a wealth of information for scene understanding. Traditionally, combining a 4K RGB image with a 1080p NIR image requires 2D image registration (warping and stretching). This process is highly error-prone and severely degrades the high-frequency geometric details of the RGB data.
+
+To resolve this, we propose a ``True 3D Fusion'' approach. By modifying the core data structure of 3D Gaussian Splatting, we allow the 3D geometry to hold NIR information intrinsically. Consequently, the modalities are perfectly aligned in 3D space without requiring 2D pixel warping.
+
+\section{Methodology}
+
+\subsection{Joint 3D Alignment (Structure-from-Motion)}
+The pipeline begins by ingesting both raw RGB and raw NIR images into a joint Structure-from-Motion (SfM) pipeline using COLMAP. The algorithm extracts SIFT keypoints across all images. By matching spatial features between the modalities, COLMAP estimates a unified set of 3D camera poses and generates a shared Sparse Point Cloud. This point cloud provides the initial spatial coordinates (X, Y, Z) for the 3D Gaussians.
+
+\subsection{Multimodal 3D Gaussians}
+Standard 3D Gaussians are parameterized by position, scale, rotation, opacity, and spherical harmonics (representing RGB color). To support NIR data, we expand the Gaussian data structure. Every Gaussian is augmented with an additional 32-dimensional feature vector, denoted as $f_{nir}$. This high-dimensional vector gives the model the mathematical capacity to represent complex spatial textures, avoiding the representation collapse that often occurs when learning single-channel grayscale values.
+
+\subsection{Vision Transformer Target Generation (DINOv2)}
+To guide the Gaussians in learning the NIR data, we replaced our initial random CNN baseline with a powerful pre-trained Vision Transformer: \textbf{DINOv2} (\texttt{dinov2\_vits14\_reg}). 
+
+Unlike a random CNN, DINOv2 generates highly semantic, structurally aware feature maps that group similar objects (like leaves, bark, or sky) together. However, DINOv2 outputs 384-dimensional patch tokens, which is prohibitively expensive to store per-Gaussian.
+To solve this, we implemented an offline precomputation pipeline:
+\begin{enumerate}
+    \item We pass all NIR images through DINOv2 to extract the 384D patch tokens.
+    \item We fit a Principal Component Analysis (PCA) model across a random sampling of all image patches to reduce the dimensionality from 384D to 32D, preserving over 77\% of the semantic variance.
+    \item These 32D targets are saved as lightweight, memory-efficient \texttt{fp16} tensors to disk.
+\end{enumerate}
+
+During the training loop, instead of running a live encoder, the training script simply streams these precomputed 32D semantic targets directly from disk, drastically improving training speed.
+
+\subsection{Rendering Architecture}
+Because the original Inria CUDA rasterizer is hardcoded to render exactly three color channels, we transitioned the rendering backend to \texttt{gsplat}. The \texttt{gsplat} engine natively supports the forward-projection and rasterization of arbitrary high-dimensional arrays, allowing us to accurately render 2D maps of our 32D $f_{nir}$ vectors.
+
+\subsection{Masked Feature Distillation Loss}
+When training on an NIR view, the system compares the rendered 32D $f_{nir}$ map against the 32D target map loaded from disk. We utilize \textbf{Adaptive Average Pooling} to precisely downsample the rendered features to match the exact patch grid resolution of the DINOv2 targets, eliminating aliasing artifacts.
+
+Because we are comparing high-dimensional vectors, we employ Cosine Similarity as the loss function. Furthermore, to prevent the Gaussians from hallucinating NIR features in empty space (e.g., the sky), we explicitly mask the loss using the rendered opacity map ($\alpha$-map). The loss is normalized by the total mask weight to ensure mathematical stability:
+\begin{equation}
+\mathcal{L}_{NIR} = \frac{\sum (\alpha\_map \times (1 - \text{CosineSimilarity}))}{\sum \alpha\_map + \epsilon}
+\end{equation}
+Views where the mean opacity falls below a threshold ($\alpha < 0.05$) are automatically skipped to prevent dead views from dragging the loss to zero.
+
+\section{Implementation Details}
+A critical challenge when transitioning to the \texttt{gsplat} backend was the disruption of the gradient flow required for Gaussian densification. 3DGS relies on gradients to identify blurry areas and clone or split Gaussians accordingly. We engineered a solution by manually extracting the absolute gradient (\texttt{.absgrad}) from the \texttt{gsplat} backend during the backward pass and routing it into the adaptive density control logic, successfully restoring the model's ability to grow.
+
+\section{Discussion and Limitations}
+While the software architecture successfully extracts and distills DINOv2 features into the 3D geometry, visual validation of the initial dataset highlighted a critical flaw in the data collection methodology.
+
+The primary cause of failure in the current dataset stems from the sequential nature of the data collection. Because the RGB and NIR videos were captured asynchronously (one after the other) rather than simultaneously, temporal inconsistencies such as wind moving the foliage and lighting changes completely broke the structural correspondence. Coupled with significantly different focal lengths and fields of view, the standard COLMAP SfM algorithm failed to establish reliable cross-spectral SIFT matches, resulting in fundamentally broken NIR camera poses.
+
+During training, as the Gaussians localized and shrank to fit the true RGB geometry, the misaligned NIR cameras were left staring into empty space. Our dynamic masking logic successfully caught this catastrophic misalignment (logging a mean opacity of $\alpha \approx 0.02$ for NIR views) and automatically skipped the NIR loss to prevent corrupting the 3D geometry with noise. Consequently, the $f_{nir}$ features remained unlearned (zeros), proving that the software pipeline gracefully handled the broken data. To achieve dense multi-spectral 3D reconstructions in future iterations, the dataset must be captured using a synchronized, stereo-calibrated rig that triggers both sensors at the exact same millisecond.
+
+\section{Conclusion}
+We successfully designed and implemented a Multimodal 3D Gaussian Splatting architecture. By utilizing DINOv2 for semantic target generation, applying PCA dimensionality reduction, and projecting the high-dimensional features into the 3D Gaussians via \texttt{gsplat}, we achieved true 3D fusion in software.
+
+\end{document}

@@ -1,0 +1,47 @@
+import open3d as o3d
+import numpy as np
+import argparse
+from plyfile import PlyData, PlyElement
+
+def filter_point_cloud(input_ply, output_ply):
+    print(f"Loading 3DGS PLY: {input_ply}")
+    # 1. Read PLY with plyfile to preserve all Gaussian attributes
+    plydata = PlyData.read(input_ply)
+    
+    # Extract just the X, Y, Z coordinates for Open3D processing
+    x = plydata['vertex']['x']
+    y = plydata['vertex']['y']
+    z = plydata['vertex']['z']
+    
+    xyz = np.vstack((x, y, z)).T
+    
+    # 2. Create Open3D Point Cloud for SOR
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(xyz)
+    
+    # 3. Statistical Outlier Removal (SOR)
+    print(f"Points before SOR: {len(pcd.points)}")
+    cl, ind = pcd.remove_statistical_outlier(nb_neighbors=20, std_ratio=2.0)
+    print(f"Points after SOR: {len(ind)}")
+    
+    # 4. Apply the inlier indices to the raw PLY data to preserve everything
+    # plydata.elements[0] is the 'vertex' element
+    vertex_data = plydata.elements[0].data
+    filtered_vertex_data = vertex_data[ind]
+    
+    # Create a new PlyElement with the filtered data
+    filtered_element = PlyElement.describe(filtered_vertex_data, 'vertex')
+    
+    # Create the new PlyData object
+    new_plydata = PlyData([filtered_element], text=plydata.text, byte_order=plydata.byte_order)
+    
+    # 5. Save the cleaned point cloud
+    print(f"Saving cleaned point cloud with all attributes preserved: {output_ply}\n")
+    new_plydata.write(output_ply)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", required=True, help="Path to original 3DGS .ply")
+    parser.add_argument("--output", required=True, help="Path to save cleaned .ply")
+    args = parser.parse_args()
+    filter_point_cloud(args.input, args.output)
