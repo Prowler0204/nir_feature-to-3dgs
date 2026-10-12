@@ -184,8 +184,8 @@ graph TD
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/<your-username>/Chirayu.git
-cd Chirayu
+git clone https://github.com/Prowler0204/nir_feature-to-3dgs.git
+cd nir_feature-to-3dgs
 ```
 
 ### 2. Environment Setup (Conda)
